@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tip Top — Central de Vendas</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+/* ── BRAND TOKENS ─────────────────────────────── */
+:root {
+  --teal:    #1DC8CD;
+  --teal-d:  #17A8AC;
+  --teal-dd: #0F7A7D;
+  --teal-l:  #E8FAFA;
+  --teal-ll: #F0FDFD;
+  --pink:    #F25C6E;
+  --pink-d:  #D94858;
+  --pink-l:  #FEE8EB;
+  --white:   #ffffff;
+  --off:     #F7FEFE;
+  --text:    #1a3a3b;
+  --muted:   #5a8a8b;
+  --border:  #C8EEEF;
+  --card:    #ffffff;
+  --bg:      #EFF9F9;
+  --font:    'Nunito', sans-serif;
+  --font2:   'Nunito Sans', sans-serif;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:var(--font); background:var(--bg); color:var(--text); display:flex; min-height:100vh; overflow-x:hidden; }
+
+/* ── POLKA DOT BG PATTERN ─────────────────────── */
+body::before {
+  content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
+  background-image: radial-gradient(circle, rgba(29,200,205,.07) 2px, transparent 2px);
+  background-size: 28px 28px;
+}
+
+/* ── SIDEBAR ──────────────────────────────────── */
+.sidebar {
+  width:230px; min-height:100vh; background:var(--teal);
+  display:flex; flex-direction:column; position:fixed; left:0; top:0; z-index:100;
+  overflow:hidden;
+}
+/* diagonal stripes on sidebar */
+.sidebar::before {
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent, transparent 18px,
+    rgba(255,255,255,.05) 18px, rgba(255,255,255,.05) 36px
+  );
+}
+.sidebar-logo {
+  padding:22px 18px 16px; display:flex; flex-direction:column; align-items:center; gap:6px;
+  border-bottom: 2px dashed rgba(255,255,255,.3); position:relative;
+}
+.logo-balloons { display:flex; gap:-4px; justify-content:center; margin-bottom:4px; }
+.balloon { width:22px; height:26px; border-radius:50% 50% 45% 45%; position:relative; display:inline-block; }
+.balloon::after { content:''; position:absolute; bottom:-6px; left:50%; transform:translateX(-50%); width:1.5px; height:7px; background:rgba(255,255,255,.5); }
+.b-pink { background:var(--pink); width:20px; height:24px; margin-right:-4px; margin-top:4px; }
+.b-teal { background:rgba(255,255,255,.35); width:22px; height:26px; }
+.logo-brand { font-size:22px; font-weight:900; color:#fff; letter-spacing:-0.5px; line-height:1; }
+.logo-tagline { font-size:10px; color:rgba(255,255,255,.75); font-style:italic; font-weight:600; }
+
+.sidebar-nav { flex:1; padding:10px 0; overflow-y:auto; position:relative; }
+.nav-sec { padding:10px 18px 4px; font-size:10px; font-weight:800; color:rgba(255,255,255,.5); letter-spacing:.1em; text-transform:uppercase; }
+.nav-item {
+  display:flex; align-items:center; gap:10px; padding:10px 18px; cursor:pointer;
+  color:rgba(255,255,255,.75); font-size:13.5px; font-weight:700;
+  transition:all .15s; border-left:3px solid transparent; position:relative;
+}
+.nav-item:hover { background:rgba(255,255,255,.12); color:#fff; }
+.nav-item.active {
+  background:rgba(255,255,255,.18); color:#fff; border-left-color:#fff;
+}
+.nav-item.active::after {
+  content:''; position:absolute; right:12px; top:50%; transform:translateY(-50%);
+  width:6px; height:6px; border-radius:50%; background:var(--pink);
+}
+.nav-badge {
+  margin-left:auto; background:var(--pink); color:#fff;
+  font-size:10px; font-weight:800; padding:2px 7px; border-radius:20px;
+}
+.sidebar-footer {
+  padding:14px 18px; border-top:2px dashed rgba(255,255,255,.3); position:relative;
+}
+.user-info { display:flex; align-items:center; gap:10px; }
+.user-avatar {
+  width:34px; height:34px; border-radius:50%; background:var(--pink);
+  display:flex; align-items:center; justify-content:center;
+  font-weight:900; font-size:13px; color:#fff; flex-shrink:0;
+  border:2px solid rgba(255,255,255,.4);
+}
+.user-name { color:#fff; font-size:13px; font-weight:800; }
+.user-plan { color:rgba(255,255,255,.65); font-size:11px; font-weight:600; }
+
+/* ── MAIN ─────────────────────────────────────── */
+.main { margin-left:230px; flex:1; display:flex; flex-direction:column; min-height:100vh; position:relative; z-index:1; }
+
+/* ── TOPBAR ───────────────────────────────────── */
+.topbar {
+  background:var(--card); border-bottom:2px solid var(--border);
+  padding:0 22px; height:62px; display:flex; align-items:center; gap:10px;
+  position:sticky; top:0; z-index:50;
+}
+.topbar-title { font-weight:900; font-size:18px; flex:1; color:var(--teal-d); }
+.topbar-title span { color:var(--pink); }
+.btn {
+  padding:7px 14px; border-radius:50px; font-size:13px; font-weight:800; cursor:pointer;
+  border:2px solid var(--border); display:flex; align-items:center; gap:5px;
+  transition:all .15s; background:var(--white); color:var(--text);
+  font-family:var(--font);
+}
+.btn:hover { border-color:var(--teal); color:var(--teal); }
+.btn:disabled { opacity:.5; cursor:not-allowed; }
+.btn-teal { background:var(--teal); color:#fff; border-color:var(--teal); }
+.btn-teal:hover { background:var(--teal-d); border-color:var(--teal-d); color:#fff; }
+.btn-pink { background:var(--pink); color:#fff; border-color:var(--pink); }
+.btn-live { background:var(--teal-l); color:var(--teal-dd); border-color:var(--teal); }
+.theme-btn { width:36px; height:36px; padding:0; justify-content:center; border-radius:50%; }
+
+/* ── CONTENT ──────────────────────────────────── */
+.content { padding:22px; flex:1; }
+
+/* ── PERIOD BAR ───────────────────────────────── */
+.period-bar { display:flex; align-items:center; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
+.period-label { font-size:13px; font-weight:800; color:var(--muted); margin-right:2px; }
+.period-btn {
+  padding:6px 16px; border-radius:50px; font-size:13px; cursor:pointer; font-weight:800;
+  background:var(--white); border:2px solid var(--border); color:var(--muted);
+  transition:all .15s; font-family:var(--font);
+}
+.period-btn:hover { border-color:var(--teal); color:var(--teal); }
+.period-btn.active { background:var(--teal); color:#fff; border-color:var(--teal); }
+.custom-range { display:none; align-items:center; gap:6px; margin-left:6px; }
+.date-in {
+  padding:5px 10px; border-radius:50px; border:2px solid var(--border);
+  background:var(--white); color:var(--text); font-size:12px; font-weight:700;
+  outline:none; font-family:var(--font);
+}
+.date-in:focus { border-color:var(--teal); }
+
+/* ── METRIC CARDS ─────────────────────────────── */
+.metrics-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:20px; }
+.metric-card {
+  background:var(--card); border-radius:20px; border:2px solid var(--border);
+  padding:20px 18px; position:relative; overflow:hidden;
+}
+/* polka dot accent top-right */
+.metric-card::after {
+  content:''; position:absolute; right:-12px; top:-12px;
+  width:60px; height:60px; border-radius:50%;
+  background:radial-gradient(circle, var(--teal-l) 30%, transparent 70%);
+  opacity:.7;
+}
+.metric-card.pink-card::after { background:radial-gradient(circle, var(--pink-l) 30%, transparent 70%); }
+.metric-label { font-size:12px; color:var(--muted); margin-bottom:8px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; }
+.metric-value { font-size:26px; font-weight:900; line-height:1; margin-bottom:8px; color:var(--teal-d); }
+.metric-card.pink-card .metric-value { color:var(--pink-d); }
+.metric-delta { font-size:12px; color:var(--muted); font-weight:700; display:flex; align-items:center; gap:4px; }
+.delta-up { color:var(--teal-d); } .delta-down { color:var(--pink-d); }
+.metric-icon {
+  position:absolute; right:16px; top:16px; width:40px; height:40px;
+  border-radius:50%; display:flex; align-items:center; justify-content:center;
+  background:var(--teal-l); color:var(--teal-d);
+}
+.metric-card.pink-card .metric-icon { background:var(--pink-l); color:var(--pink-d); }
+
+/* ── LIVE DOT ─────────────────────────────────── */
+.live-dot { width:9px; height:9px; border-radius:50%; background:#22c55e; flex-shrink:0; animation:pulse 1.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)} }
+
+/* ── LIVE PANEL ───────────────────────────────── */
+.live-panel {
+  background:var(--card); border-radius:20px; border:2px solid var(--teal);
+  margin-bottom:20px; overflow:hidden;
+}
+.live-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 20px; background:var(--teal); position:relative; overflow:hidden;
+}
+/* stripes on live header */
+.live-header::before {
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background:repeating-linear-gradient(-45deg,transparent,transparent 12px,rgba(255,255,255,.06) 12px,rgba(255,255,255,.06) 24px);
+}
+.live-title { display:flex; align-items:center; gap:8px; font-weight:900; font-size:15px; color:#fff; position:relative; }
+.live-meta { font-size:12px; color:rgba(255,255,255,.8); font-weight:700; position:relative; }
+.live-kpis { display:grid; grid-template-columns:repeat(4,1fr); }
+.live-kpi { padding:16px 18px; border-right:2px solid var(--border); text-align:center; }
+.live-kpi:last-child { border-right:none; }
+.live-kpi-val { font-size:24px; font-weight:900; color:var(--teal-d); }
+.live-kpi-label { font-size:11px; color:var(--muted); font-weight:700; margin-top:3px; text-transform:uppercase; letter-spacing:.03em; }
+.live-orders { max-height:260px; overflow-y:auto; }
+.live-row { display:flex; align-items:center; gap:10px; padding:10px 18px; border-bottom:1.5px dashed var(--border); font-size:13px; font-weight:700; transition:background .15s; }
+.live-row:hover { background:var(--teal-ll); }
+.live-row:last-child { border-bottom:none; }
+.live-row.new-order { animation:newrow .7s ease; }
+@keyframes newrow { from { background:rgba(29,200,205,.2); } to { background:transparent; } }
+.live-time { color:var(--muted); font-size:11px; min-width:44px; font-weight:700; }
+.live-prod { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.live-amount { font-weight:900; color:var(--teal-d); min-width:84px; text-align:right; }
+.sdot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.sdot-green{background:#22c55e}.sdot-blue{background:var(--teal)}.sdot-orange{background:#f59e0b}.sdot-red{background:var(--pink)}
+
+/* countdown */
+.countdown-wrap { display:none; align-items:center; gap:6px; font-size:12px; color:var(--muted); font-weight:700; }
+.countdown-bar { width:52px; height:4px; background:var(--border); border-radius:2px; overflow:hidden; }
+.countdown-fill { height:100%; background:var(--teal); border-radius:2px; transition:width 1s linear; }
+
+/* ── CHART CARDS ──────────────────────────────── */
+.charts-row { display:grid; grid-template-columns:2fr 1fr; gap:14px; margin-bottom:20px; }
+.chart-card {
+  background:var(--card); border-radius:20px; border:2px solid var(--border); padding:20px;
+  position:relative; overflow:hidden;
+}
+/* polka accent */
+.chart-card::before {
+  content:''; position:absolute; right:-20px; bottom:-20px;
+  width:80px; height:80px; border-radius:50%;
+  background:radial-gradient(circle, var(--teal-l) 40%, transparent 70%);
+  opacity:.5; pointer-events:none;
+}
+.chart-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:14px; }
+.chart-title { font-size:15px; font-weight:900; color:var(--teal-d); }
+.chart-sub { font-size:11px; color:var(--muted); margin-top:2px; font-weight:700; }
+.chart-tabs { display:flex; gap:4px; background:var(--teal-l); padding:3px; border-radius:50px; }
+.chart-tab { padding:4px 13px; border-radius:50px; font-size:12px; cursor:pointer; color:var(--muted); transition:all .15s; font-weight:800; font-family:var(--font); }
+.chart-tab.active { background:var(--teal); color:#fff; }
+.bottom-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:20px; }
+
+/* ── TABLES ───────────────────────────────────── */
+.data-table { width:100%; border-collapse:collapse; }
+.data-table th { font-size:11px; font-weight:800; color:var(--muted); padding:8px 12px; text-align:left; border-bottom:2px dashed var(--border); text-transform:uppercase; letter-spacing:.04em; }
+.data-table td { font-size:13px; padding:10px 12px; border-bottom:1.5px dashed var(--border); font-weight:700; }
+.data-table tr:last-child td { border-bottom:none; }
+.data-table tr:hover td { background:var(--teal-ll); }
+.badge { padding:3px 10px; border-radius:50px; font-size:11px; font-weight:800; }
+.badge-green { background:var(--teal-l); color:var(--teal-dd); }
+.badge-yellow { background:#fef3c7; color:#92400e; }
+.badge-red { background:var(--pink-l); color:var(--pink-d); }
+.badge-blue { background:var(--teal-l); color:var(--teal-dd); }
+
+/* ── STOCK BAR ────────────────────────────────── */
+.stock-bar { width:56px; height:6px; background:var(--border); border-radius:3px; overflow:hidden; display:inline-block; vertical-align:middle; margin-right:5px; }
+.stock-fill { height:100%; border-radius:3px; }
+
+/* ── AUTH PAGE ────────────────────────────────── */
+.auth-wrap {
+  max-width:520px; margin:50px auto;
+  background:var(--card); border-radius:24px; border:2px solid var(--border); padding:40px;
+  position:relative; overflow:hidden;
+}
+/* polka dots deco */
+.auth-wrap::before {
+  content:''; position:absolute; right:-30px; top:-30px;
+  width:120px; height:120px; border-radius:50%;
+  background:radial-gradient(circle, var(--pink-l) 40%, transparent 70%);
+}
+.auth-wrap::after {
+  content:''; position:absolute; left:-20px; bottom:-20px;
+  width:100px; height:100px; border-radius:50%;
+  background:radial-gradient(circle, var(--teal-l) 40%, transparent 70%);
+}
+.auth-logo-wrap { text-align:center; margin-bottom:20px; position:relative; }
+.auth-logo-balloons { display:flex; justify-content:center; gap:6px; margin-bottom:8px; }
+.auth-balloon { border-radius:50% 50% 45% 45%; position:relative; }
+.auth-balloon::after { content:''; position:absolute; bottom:-8px; left:50%; transform:translateX(-50%); width:2px; height:8px; background:var(--border); }
+.auth-b-pink { width:32px; height:38px; background:var(--pink); margin-top:8px; }
+.auth-b-teal { width:38px; height:44px; background:var(--teal); }
+.auth-brand { font-size:32px; font-weight:900; color:var(--teal); }
+.auth-tagline { font-size:12px; color:var(--muted); font-style:italic; font-weight:700; }
+.auth-title { font-size:20px; font-weight:900; text-align:center; margin-bottom:6px; color:var(--text); }
+.auth-sub { color:var(--muted); font-size:13px; text-align:center; margin-bottom:26px; line-height:1.7; font-weight:600; }
+.setup-steps { background:var(--teal-ll); border-radius:16px; border:2px dashed var(--border); padding:16px; margin-bottom:20px; }
+.step-item { display:flex; gap:10px; margin-bottom:12px; }
+.step-item:last-child { margin-bottom:0; }
+.step-num { width:24px; height:24px; background:var(--teal); color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:900; flex-shrink:0; margin-top:1px; }
+.step-text { font-size:12px; color:var(--muted); line-height:1.6; font-weight:600; }
+.form-group { margin-bottom:14px; }
+.form-label { font-size:12px; font-weight:800; margin-bottom:6px; display:block; color:var(--text); text-transform:uppercase; letter-spacing:.04em; }
+.form-input {
+  width:100%; padding:10px 14px; border-radius:50px; border:2px solid var(--border);
+  background:var(--teal-ll); color:var(--text); font-size:13px; outline:none;
+  transition:border-color .15s; font-family:var(--font); font-weight:700;
+}
+.form-input:focus { border-color:var(--teal); }
+.form-hint { font-size:11px; color:var(--muted); margin-top:4px; font-weight:600; }
+.auth-or { display:flex; align-items:center; gap:10px; margin:18px 0; color:var(--muted); font-size:12px; font-weight:700; }
+.auth-or::before,.auth-or::after { content:''; flex:1; height:2px; background:var(--border); border-radius:1px; }
+.demo-btn {
+  background:var(--teal-ll); border:2px dashed var(--teal); color:var(--teal-d);
+  padding:11px; border-radius:50px; cursor:pointer; font-size:13px; width:100%;
+  transition:all .15s; font-family:var(--font); font-weight:800;
+}
+.demo-btn:hover { background:var(--teal); color:#fff; }
+
+/* ── PAGES ────────────────────────────────────── */
+.page-section { display:none; } .page-section.active { display:block; }
+.loading-overlay { position:fixed; inset:0; background:rgba(29,200,205,.15); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; z-index:999; }
+.loading-card { background:var(--card); border-radius:20px; border:2px solid var(--border); padding:32px 40px; text-align:center; }
+.spinner { width:40px; height:40px; border:3px solid var(--border); border-top-color:var(--teal); border-radius:50%; animation:spin .8s linear infinite; margin:0 auto 14px; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.loading-text { font-size:13px; color:var(--muted); font-weight:700; }
+.alert { padding:11px 16px; border-radius:50px; font-size:13px; margin-bottom:16px; display:flex; align-items:center; gap:8px; font-weight:700; }
+.alert-success { background:var(--teal-l); color:var(--teal-dd); border:2px solid var(--teal); }
+.alert-warning { background:#fef3c7; color:#92400e; border:2px solid #fcd34d; }
+.alert-info { background:var(--teal-ll); color:var(--teal-dd); border:2px dashed var(--teal); }
+
+/* ── QUESTIONS ────────────────────────────────── */
+.question-item { padding:12px 16px; border-bottom:1.5px dashed var(--border); cursor:pointer; transition:background .15s; }
+.question-item:hover { background:var(--teal-ll); }
+.question-item:last-child { border-bottom:none; }
+.q-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:3px; }
+.q-product { font-size:13px; font-weight:800; }
+.q-time { font-size:11px; color:var(--muted); font-weight:700; }
+.q-text { font-size:12px; color:var(--muted); font-weight:600; }
+
+/* ── SECTION HEADER DECO ─────────────────────── */
+.section-header {
+  display:flex; align-items:center; gap:10px; margin-bottom:18px;
+  padding-bottom:12px; border-bottom:2px dashed var(--border);
+}
+.section-dot { width:12px; height:12px; border-radius:50%; background:var(--pink); flex-shrink:0; }
+.section-title { font-size:16px; font-weight:900; color:var(--teal-d); }
+
+/* ── WALL STREET ARENA ────────────────────────── */
+.ws-arena {
+  position:relative; border-radius:20px; overflow:hidden; margin-bottom:0;
+  background:#0a1628; min-height:320px;
+  border:2px solid #1DC8CD;
+  box-shadow:0 0 40px rgba(29,200,205,.2);
+}
+#balloon-canvas {
+  position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:1;
+}
+/* ticker tape */
+.ticker-wrap {
+  position:absolute; top:0; left:0; right:0; height:36px;
+  background:rgba(29,200,205,.15); border-bottom:1px solid rgba(29,200,205,.3);
+  overflow:hidden; z-index:10; display:flex; align-items:center;
+}
+.ticker-track {
+  display:flex; align-items:center; gap:28px; white-space:nowrap;
+  animation:tickerScroll 25s linear infinite;
+  padding-left:100%;
+}
+@keyframes tickerScroll { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+.tick-item { font-size:12px; font-weight:800; letter-spacing:.04em; font-family:var(--font); }
+.tick-up    { color:#1DC8CD; }
+.tick-down  { color:#F25C6E; }
+.tick-neutral { color:#a0b4b5; }
+.tick-sep   { color:rgba(29,200,205,.4); font-size:10px; }
+/* scoreboard */
+.ws-scoreboard {
+  position:relative; z-index:5; display:grid; grid-template-columns:repeat(4,1fr);
+  margin-top:36px; border-bottom:1px solid rgba(29,200,205,.2);
+}
+.ws-kpi {
+  padding:20px 18px; border-right:1px solid rgba(29,200,205,.15); text-align:center;
+}
+.ws-kpi:last-child { border-right:none; }
+.ws-kpi-label {
+  font-size:10px; font-weight:800; letter-spacing:.12em; text-transform:uppercase;
+  color:rgba(29,200,205,.6); margin-bottom:8px;
+}
+.ws-kpi-val {
+  font-size:28px; font-weight:900; color:#1DC8CD; line-height:1;
+  font-variant-numeric:tabular-nums; transition:all .3s;
+}
+.ws-kpi-val.flash-up {
+  animation:flashUp .6s ease;
+}
+@keyframes flashUp {
+  0%  { transform:scale(1.1); color:#fff; text-shadow:0 0 20px #1DC8CD; }
+  100%{ transform:scale(1); color:#1DC8CD; text-shadow:none; }
+}
+.ws-kpi-alert .ws-kpi-val { color:#F25C6E; }
+.ws-kpi-delta { font-size:11px; color:rgba(29,200,205,.5); font-weight:700; margin-top:4px; }
+
+/* last sale flash card */
+.ws-last-sale {
+  position:relative; z-index:5; margin:16px 18px; padding:14px 18px;
+  background:rgba(29,200,205,.08); border:1px solid rgba(29,200,205,.25);
+  border-radius:14px; display:flex; align-items:center; gap:16px;
+  min-height:68px;
+}
+.ws-sale-label {
+  font-size:10px; font-weight:800; letter-spacing:.1em; color:rgba(29,200,205,.5);
+  text-transform:uppercase; min-width:80px;
+}
+.ws-sale-prod { flex:1; font-size:14px; font-weight:800; color:#fff; }
+.ws-sale-val { font-size:20px; font-weight:900; color:#1DC8CD; }
+.ws-sale-time { font-size:11px; color:rgba(29,200,205,.4); font-weight:700; min-width:44px; text-align:right; }
+.ws-last-sale.sale-flash { animation:saleFlash .8s ease; }
+@keyframes saleFlash {
+  0%  { background:rgba(29,200,205,.3); border-color:#1DC8CD; box-shadow:0 0 30px rgba(29,200,205,.4); }
+  100%{ background:rgba(29,200,205,.08); border-color:rgba(29,200,205,.25); box-shadow:none; }
+}
+/* fire badge on new sale */
+.fire-badge {
+  position:absolute; font-size:22px; animation:firePop .5s ease forwards;
+  pointer-events:none; z-index:20;
+}
+@keyframes firePop {
+  0%  { transform:scale(0) rotate(-20deg); opacity:1; }
+  60% { transform:scale(1.3) rotate(10deg); opacity:1; }
+  100%{ transform:scale(1) rotate(0deg); opacity:1; }
+}
+
+/* ── REPLY PANEL ──────────────────────────────── */
+.reply-panel {
+  background:var(--card); border-radius:20px; border:2px solid var(--border); padding:20px;
+  position:sticky; top:80px;
+}
+.reply-empty { text-align:center; padding:30px 10px; }
+.reply-product { font-size:13px; font-weight:800; color:var(--teal-d); margin-bottom:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.reply-bubble-wrap { margin-bottom:14px; }
+.reply-bubble-label { font-size:10px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px; }
+.reply-bubble {
+  background:var(--teal-ll); border:1.5px dashed var(--teal); border-radius:14px 14px 14px 4px;
+  padding:12px 14px; font-size:13px; font-weight:600; color:var(--text); line-height:1.5;
+}
+.reply-meta { font-size:11px; color:var(--muted); font-weight:700; margin-bottom:14px; }
+.reply-field-label { font-size:11px; font-weight:800; color:var(--text); text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px; }
+.reply-textarea {
+  width:100%; padding:10px 14px; border-radius:14px; border:2px solid var(--border);
+  background:var(--teal-ll); color:var(--text); font-size:13px; outline:none;
+  resize:vertical; transition:border-color .15s; font-family:var(--font); font-weight:600;
+  min-height:90px;
+}
+.reply-textarea:focus { border-color:var(--teal); }
+.reply-quick-label { font-size:10px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin:12px 0 6px; }
+.reply-quick-btns { display:flex; flex-wrap:wrap; gap:5px; }
+.quick-btn {
+  padding:4px 10px; border-radius:50px; font-size:11px; font-weight:800; cursor:pointer;
+  background:var(--teal-ll); border:1.5px solid var(--teal); color:var(--teal-d);
+  transition:all .15s; font-family:var(--font);
+}
+.quick-btn:hover { background:var(--teal); color:#fff; }
+.reply-note { font-size:11px; color:var(--muted); font-weight:600; margin-top:10px; text-align:center; padding:8px; background:var(--bg); border-radius:8px; }
+/* question items - selectable */
+.question-item.selected { background:var(--teal-ll); border-left:3px solid var(--teal); }
+.question-item.answered { opacity:.55; }
+.question-item .q-actions { display:flex; align-items:center; gap:6px; margin-top:6px; }
+
+@media(max-width:1100px){.metrics-grid{grid-template-columns:repeat(2,1fr)}.charts-row,.bottom-row{grid-template-columns:1fr}.ws-scoreboard{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:700px){.sidebar{width:60px}.logo-brand,.logo-tagline,.logo-balloons,.nav-item span,.user-name,.user-plan,.nav-sec{display:none}.main{margin-left:60px}}
+</style>
+</head>
+<body>
+
+<!-- ── SIDEBAR ──────────────────────────────────── -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-balloons">
+      <div class="balloon b-pink"></div>
+      <div class="balloon b-teal"></div>
+    </div>
+    <div class="logo-brand">tiptop</div>
+    <div class="logo-tagline">gostoso de viver junto</div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-sec">Principal</div>
+    <div class="nav-item active" onclick="showPage('overview')">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span>Visão Geral</span>
+    </div>
+    <div class="nav-item" onclick="showPage('live')">
+      <div class="live-dot"></div>
+      <span>Ao Vivo — Hoje</span>
+    </div>
+    <div class="nav-sec">Vendas</div>
+    <div class="nav-item" onclick="showPage('sales')">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span>Faturamento</span>
+    </div>
+    <div class="nav-item" onclick="showPage('listings')">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <span>Anúncios</span>
+    </div>
+    <div class="nav-item" onclick="showPage('stock')">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+      <span>Estoque</span>
+    </div>
+    <div class="nav-sec">Atendimento</div>
+    <div class="nav-item" onclick="showPage('questions')">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span>Perguntas</span>
+      <span class="nav-badge" id="q-badge">0</span>
+    </div>
+    <div class="nav-sec">Conta</div>
+    <div class="nav-item" onclick="showPage('auth')">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      <span>Configurações</span>
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-info">
+      <div class="user-avatar" id="avatar-initials">--</div>
+      <div><div class="user-name" id="sidebar-user">Não conectado</div><div class="user-plan">Vendedor Tip Top</div></div>
+    </div>
+  </div>
+</aside>
+
+<!-- ── MAIN ──────────────────────────────────────── -->
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="page-title">Visão <span>Geral</span></div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div class="countdown-wrap" id="countdown-wrap">
+        <span id="countdown-num">60</span>s
+        <div class="countdown-bar"><div class="countdown-fill" id="countdown-fill" style="width:100%"></div></div>
+      </div>
+      <button class="btn btn-live" id="live-btn" onclick="toggleLive()" style="display:none">
+        <div class="live-dot"></div><span id="live-btn-text">Ao Vivo</span>
+      </button>
+      <button class="btn" onclick="refreshData()" id="refresh-btn">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        Atualizar
+      </button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- AUTH PAGE -->
+    <div id="page-auth" class="page-section">
+      <div class="auth-wrap">
+        <div class="auth-logo-wrap">
+          <div class="auth-logo-balloons">
+            <div class="auth-balloon auth-b-pink"></div>
+            <div class="auth-balloon auth-b-teal"></div>
+          </div>
+          <div class="auth-brand">tiptop</div>
+          <div class="auth-tagline">gostoso de viver junto</div>
+        </div>
+        <div class="auth-title">Conectar ao Mercado Livre</div>
+        <div class="auth-sub">Insira suas credenciais para acessar os dados reais da sua conta e visualizar tudo aqui com a nossa carinha ☺</div>
+        <div class="setup-steps">
+          <div class="step-item"><div class="step-num">1</div><div class="step-text">Acesse <a href="https://developers.mercadolivre.com.br" target="_blank" style="color:var(--teal);font-weight:800">developers.mercadolivre.com.br</a> → crie uma aplicação</div></div>
+          <div class="step-item"><div class="step-num">2</div><div class="step-text">No campo <b>URIs de redirect</b> coloque a URL onde este dashboard está hospedado (ex: sua URL do GitHub Pages)</div></div>
+          <div class="step-item"><div class="step-num">3</div><div class="step-text">Marque <b>Mercado Livre</b> em Negócios e as permissões de pedidos, itens e mensagens</div></div>
+          <div class="step-item"><div class="step-num">4</div><div class="step-text">Copie o <b>App ID</b> e <b>Client Secret</b> e cole abaixo</div></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">App ID (Client ID)</label>
+          <input class="form-input" id="client-id" type="text" placeholder="Ex: 1234567890123456">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Client Secret</label>
+          <input class="form-input" id="client-secret" type="password" placeholder="Seu client secret">
+          <div class="form-hint">Salvo apenas no seu navegador</div>
+        </div>
+        <button class="btn btn-teal" style="width:100%;justify-content:center;padding:12px;font-size:14px" onclick="startAuth()">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+          Autorizar com Mercado Livre
+        </button>
+        <div class="auth-or">ou</div>
+        <button class="demo-btn" onclick="loadDemoData()">🎈 Carregar dados de demonstração</button>
+      </div>
+    </div>
+
+    <!-- OVERVIEW PAGE -->
+    <div id="page-overview" class="page-section">
+      <div id="alert-area"></div>
+      <div class="period-bar">
+        <span class="period-label">Período:</span>
+        <button class="period-btn" onclick="setPeriod('today',this)">Hoje</button>
+        <button class="period-btn active" onclick="setPeriod('7d',this)">7 dias</button>
+        <button class="period-btn" onclick="setPeriod('30d',this)">30 dias</button>
+        <button class="period-btn" onclick="setPeriod('90d',this)">90 dias</button>
+        <button class="period-btn" onclick="setPeriod('custom',this)">Personalizado</button>
+        <div class="custom-range" id="custom-range">
+          <input type="date" class="date-in" id="date-from">
+          <span style="font-size:12px;color:var(--muted);font-weight:700">até</span>
+          <input type="date" class="date-in" id="date-to">
+          <button class="btn btn-teal" style="padding:5px 14px;font-size:12px;border-radius:50px" onclick="applyCustom()">Aplicar</button>
+        </div>
+      </div>
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 1 0 0 7h5a3.5 3.5 0 1 1 0 7H6"/></svg></div>
+          <div class="metric-label">Faturamento</div>
+          <div class="metric-value" id="m-rev">—</div>
+          <div class="metric-delta" id="m-rev-d">—</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>
+          <div class="metric-label">Pedidos</div>
+          <div class="metric-value" id="m-ord">—</div>
+          <div class="metric-delta" id="m-ord-d">—</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></div>
+          <div class="metric-label">Ticket Médio</div>
+          <div class="metric-value" id="m-ticket">—</div>
+          <div class="metric-delta" id="m-ticket-d">—</div>
+        </div>
+        <div class="metric-card pink-card">
+          <div class="metric-icon"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+          <div class="metric-label">Perguntas Pendentes</div>
+          <div class="metric-value" id="m-q">—</div>
+          <div class="metric-delta" id="m-q-d">—</div>
+        </div>
+      </div>
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div><div class="chart-title">Vendas no período</div><div class="chart-sub" id="period-label">Últimos 7 dias</div></div>
+            <div class="chart-tabs">
+              <div class="chart-tab active" onclick="switchTab('rev',this)">Receita</div>
+              <div class="chart-tab" onclick="switchTab('ord',this)">Pedidos</div>
+            </div>
+          </div>
+          <div style="position:relative;height:230px"><canvas id="mainChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header"><div><div class="chart-title">Categorias</div><div class="chart-sub">Por faturamento</div></div></div>
+          <div id="cat-legend" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;font-size:11px;color:var(--muted);font-weight:700"></div>
+          <div style="position:relative;height:185px"><canvas id="catChart"></canvas></div>
+        </div>
+      </div>
+      <div class="bottom-row">
+        <div class="chart-card">
+          <div class="chart-header"><div class="chart-title">Top Produtos</div><span class="badge badge-blue" id="top-badge">7 dias</span></div>
+          <table class="data-table"><thead><tr><th>Produto</th><th>Qtd</th><th>Receita</th><th>Status</th></tr></thead><tbody id="top-body"></tbody></table>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header"><div class="chart-title">Reputação</div></div>
+          <div style="position:relative;height:185px"><canvas id="reputChart"></canvas></div>
+          <div id="reput-grid" style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:7px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LIVE PAGE -->
+    <div id="page-live" class="page-section">
+
+      <!-- WALL STREET ARENA -->
+      <div class="ws-arena" id="ws-arena">
+        <!-- balloon canvas layer -->
+        <canvas id="balloon-canvas"></canvas>
+
+        <!-- ticker tape -->
+        <div class="ticker-wrap">
+          <div class="ticker-track" id="ticker-track">
+            <span class="tick-item tick-up">🎈 Body Borboleta &nbsp;+R$89 ▲</span>
+            <span class="tick-item tick-up">🎈 Macacão Listrado &nbsp;+R$129 ▲</span>
+            <span class="tick-item tick-up">🎈 Conjunto Pijama &nbsp;+R$99 ▲</span>
+            <span class="tick-sep">◆</span>
+            <span class="tick-item tick-up">🎈 Vestido Babado &nbsp;+R$149 ▲</span>
+            <span class="tick-item tick-neutral">🎈 Body Florzinha &nbsp;R$89 —</span>
+            <span class="tick-item tick-up">🎈 Jardineira Jeans &nbsp;+R$159 ▲</span>
+            <span class="tick-sep">◆</span>
+          </div>
+        </div>
+
+        <!-- KPI scoreboard -->
+        <div class="ws-scoreboard">
+          <div class="ws-kpi">
+            <div class="ws-kpi-label">RECEITA HOJE</div>
+            <div class="ws-kpi-val" id="lv-rev">R$ 0,00</div>
+            <div class="ws-kpi-delta" id="lv-rev-delta">— pedidos</div>
+          </div>
+          <div class="ws-kpi">
+            <div class="ws-kpi-label">PEDIDOS</div>
+            <div class="ws-kpi-val" id="lv-ord">0</div>
+            <div class="ws-kpi-delta" id="lv-ord-delta">hoje</div>
+          </div>
+          <div class="ws-kpi">
+            <div class="ws-kpi-label">TICKET MÉDIO</div>
+            <div class="ws-kpi-val" id="lv-ticket">R$ 0</div>
+            <div class="ws-kpi-delta">por pedido</div>
+          </div>
+          <div class="ws-kpi ws-kpi-alert">
+            <div class="ws-kpi-label">PERGUNTAS</div>
+            <div class="ws-kpi-val" id="lv-q">0</div>
+            <div class="ws-kpi-delta" id="lv-q-delta">pendentes</div>
+          </div>
+        </div>
+
+        <!-- last sale flash -->
+        <div class="ws-last-sale" id="ws-last-sale">
+          <div class="ws-sale-label">ÚLTIMA VENDA</div>
+          <div class="ws-sale-prod" id="ws-sale-prod">—</div>
+          <div class="ws-sale-val" id="ws-sale-val">—</div>
+          <div class="ws-sale-time" id="ws-sale-time">—</div>
+        </div>
+      </div>
+
+      <!-- live feed list -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div><div class="chart-title">Feed de Vendas — Hoje</div><div class="chart-sub" id="last-update-time">—</div></div>
+            <span class="badge badge-green" id="live-feed-count">0 vendas</span>
+          </div>
+          <div class="live-orders" id="live-list">
+            <div style="padding:22px;text-align:center;color:var(--muted);font-size:13px;font-weight:700">Aguardando pedidos do dia... 🎈</div>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header"><div><div class="chart-title">Faturamento por hora</div><div class="chart-sub">Barra turquesa = hora atual</div></div></div>
+          <div style="position:relative;height:240px"><canvas id="liveHourChart"></canvas></div>
+          <div id="live-status-leg" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;font-size:11px;color:var(--muted);font-weight:700"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SALES PAGE -->
+    <div id="page-sales" class="page-section">
+      <div class="period-bar">
+        <span class="period-label">Período:</span>
+        <button class="period-btn" onclick="setSalesPer('7d',this)">7 dias</button>
+        <button class="period-btn active" onclick="setSalesPer('30d',this)">30 dias</button>
+        <button class="period-btn" onclick="setSalesPer('90d',this)">90 dias</button>
+      </div>
+      <div class="chart-card" style="margin-bottom:14px">
+        <div class="chart-header"><div><div class="chart-title">Faturamento diário</div></div></div>
+        <div style="position:relative;height:270px"><canvas id="salesChart"></canvas></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div class="chart-card"><div class="chart-header"><div class="chart-title">Ticket médio por semana</div></div><div style="position:relative;height:210px"><canvas id="ticketChart"></canvas></div></div>
+        <div class="chart-card"><div class="chart-header"><div class="chart-title">Métodos de pagamento</div></div><div style="position:relative;height:210px"><canvas id="payChart"></canvas></div></div>
+      </div>
+    </div>
+
+    <!-- LISTINGS -->
+    <div id="page-listings" class="page-section">
+      <div class="metrics-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:14px">
+        <div class="metric-card"><div class="metric-label">Ativos</div><div class="metric-value" id="l-active">—</div></div>
+        <div class="metric-card pink-card"><div class="metric-label">Pausados</div><div class="metric-value" id="l-paused">—</div></div>
+        <div class="metric-card pink-card"><div class="metric-label">Encerrados</div><div class="metric-value" id="l-closed">—</div></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header"><div class="chart-title">Seus Anúncios</div></div>
+        <table class="data-table"><thead><tr><th>Título</th><th>Preço</th><th>Estoque</th><th>Visitas</th><th>Status</th></tr></thead><tbody id="listings-body"></tbody></table>
+      </div>
+    </div>
+
+    <!-- STOCK -->
+    <div id="page-stock" class="page-section">
+      <div class="alert alert-warning" style="margin-bottom:16px"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg><span id="stock-alert-text">—</span></div>
+      <div class="chart-card">
+        <div class="chart-header"><div class="chart-title">Controle de Estoque</div></div>
+        <table class="data-table"><thead><tr><th>Produto</th><th>SKU</th><th>Qtd</th><th>Nível</th><th>Status</th></tr></thead><tbody id="stock-body"></tbody></table>
+      </div>
+    </div>
+
+    <!-- QUESTIONS -->
+    <div id="page-questions" class="page-section">
+      <div id="q-alert-area"></div>
+      <div style="display:grid;grid-template-columns:1fr 360px;gap:14px;align-items:start">
+        <!-- question list -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <div><div class="chart-title">Perguntas Recentes</div><div class="chart-sub">Clique em uma pergunta para responder</div></div>
+            <span class="badge badge-red" id="pending-count">0</span>
+          </div>
+          <div id="questions-list"></div>
+        </div>
+        <!-- reply panel -->
+        <div class="reply-panel" id="reply-panel">
+          <div class="reply-empty" id="reply-empty">
+            <div style="font-size:36px;margin-bottom:10px">💬</div>
+            <div style="font-weight:800;color:var(--teal-d);font-size:14px;margin-bottom:4px">Nenhuma pergunta selecionada</div>
+            <div style="font-size:12px;color:var(--muted);font-weight:600">Clique em uma pergunta ao lado para responder diretamente pelo dashboard</div>
+          </div>
+          <div class="reply-form" id="reply-form" style="display:none">
+            <div class="reply-product" id="reply-product">—</div>
+            <div class="reply-bubble-wrap">
+              <div class="reply-bubble-label">Pergunta do cliente</div>
+              <div class="reply-bubble" id="reply-question-text">—</div>
+            </div>
+            <div class="reply-meta" id="reply-meta">—</div>
+            <div class="reply-field-label">Sua resposta</div>
+            <textarea class="reply-textarea" id="reply-text" placeholder="Digite sua resposta aqui... seja carinhoso como a Tip Top! 🌟" rows="4"></textarea>
+            <div class="reply-quick-label">Respostas rápidas</div>
+            <div class="reply-quick-btns" id="reply-quick-btns">
+              <button class="quick-btn" onclick="insertQuick('Olá! Sim, o produto possui fechamento de pressão embaixo para facilitar a troca de fralda. 😊')">Fechamento fralda</button>
+              <button class="quick-btn" onclick="insertQuick('Olá! Aceitamos trocas em até 30 dias após o recebimento. Entre em contato pelo nosso chat! 💛')">Política de trocas</button>
+              <button class="quick-btn" onclick="insertQuick('Olá! O produto é 100% algodão e pode ser lavado à máquina em temperatura fria. 🌿')">Material/lavagem</button>
+              <button class="quick-btn" onclick="insertQuick('Olá! Verificamos e o tamanho indicado segue nossa tabela de medidas disponível nas fotos do anúncio. 👶')">Tabela de tamanhos</button>
+              <button class="quick-btn" onclick="insertQuick('Olá! Sim, fazemos envio para todo o Brasil com frete rápido! 📦')">Entrega/frete</button>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:12px">
+              <button class="btn" style="flex:1;justify-content:center" onclick="clearReply()">Cancelar</button>
+              <button class="btn btn-teal" style="flex:2;justify-content:center" id="reply-send-btn" onclick="sendReply()">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                Enviar Resposta
+              </button>
+            </div>
+            <div class="reply-note">💡 A resposta será publicada diretamente no Mercado Livre via API</div>
+          </div>
+        </div>
+      </div>
+      <!-- response stats -->
+      <div class="chart-card" style="margin-top:14px">
+        <div class="chart-header"><div class="chart-title">Tempo de Resposta</div></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:center">
+          <div>
+            <div style="position:relative;height:180px"><canvas id="responseChart"></canvas></div>
+          </div>
+          <div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">Taxa de resposta</div>
+            <div style="height:10px;background:var(--border);border-radius:20px;overflow:hidden;margin-bottom:6px"><div id="resp-bar" style="height:100%;background:var(--teal);border-radius:20px;transition:width .8s"></div></div>
+            <div id="resp-text" style="font-size:14px;color:var(--teal-d);font-weight:900;margin-bottom:16px">—</div>
+            <div id="q-stats-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<div class="loading-overlay" id="loading" style="display:none">
+  <div class="loading-card"><div class="spinner"></div><div class="loading-text" id="loading-text">Carregando...</div></div>
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────
+const S={connected:false,demo:false,token:null,uid:null,period:'7d',chartMode:'rev',salesPer:'30d',allOrders:[],todayOrders:[],liveRunning:false,countdownSec:60,cdTimer:null};
+const CH={};
+const COLORS=['#1DC8CD','#F25C6E','#0F7A7D','#f59e0b','#9B59B6','#22c55e','#F39C12'];
+const PRODS=['Body Manga Curta Estampa Borboleta','Macacão Listrado Bebê','Conjunto Pijama Estrelinhas','Body Curto Poá Rosa','Calça Legging Floral','Vestido Babado Tule','Jardineira Jeans Bordada','Body Bordado Florzinha','Conjunto Verão Tucano','Shorts Bermuda Tie-Dye'];
+const PRICES=[89,129,99,79,69,149,159,89,109,89];
+const CATS=['Body','Macacão','Pijama','Body','Calça','Vestido','Jardineira','Body','Conjunto','Shorts'];
+
+// ── NAVIGATION ─────────────────────────────────────
+const TITLES={auth:'Configurações',overview:'Visão Geral',live:'Ao Vivo — Hoje',sales:'Faturamento',listings:'Anúncios',stock:'Estoque',questions:'Perguntas'};
+const TITLE_ACCENTS={overview:'Geral',live:'Hoje',sales:'mento',listings:'cios',stock:'que',questions:'guntas'};
+function showPage(n){
+  if(!S.connected&&n!=='auth'){showPage('auth');return;}
+  document.querySelectorAll('.page-section').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
+  document.getElementById('page-'+n).classList.add('active');
+  const ni=document.querySelector(`.nav-item[onclick="showPage('${n}')"]`);if(ni)ni.classList.add('active');
+  document.getElementById('page-title').textContent=TITLES[n]||n;
+  const lb=document.getElementById('live-btn'),cw=document.getElementById('countdown-wrap');
+  if(n==='live'){lb.style.display='flex';cw.style.display='flex';if(!S.liveRunning)startLive();}
+  else{lb.style.display='none';cw.style.display='none';}
+}
+
+// ── PERIOD ─────────────────────────────────────────
+function setPeriod(p,el){
+  document.querySelectorAll('#page-overview .period-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');S.period=p;
+  document.getElementById('custom-range').style.display=p==='custom'?'flex':'none';
+  if(p!=='custom')render();
+}
+function applyCustom(){
+  S.customFrom=document.getElementById('date-from').value;S.customTo=document.getElementById('date-to').value;
+  if(!S.customFrom||!S.customTo){alert('Selecione as duas datas.');return;}render();
+}
+function getRange(){
+  const now=new Date(),ts=now.toISOString().slice(0,10);
+  if(S.period==='today')return{from:ts,to:ts,label:'Hoje'};
+  if(S.period==='7d'){const f=new Date(now);f.setDate(f.getDate()-6);return{from:f.toISOString().slice(0,10),to:ts,label:'Últimos 7 dias'};}
+  if(S.period==='30d'){const f=new Date(now);f.setDate(f.getDate()-29);return{from:f.toISOString().slice(0,10),to:ts,label:'Últimos 30 dias'};}
+  if(S.period==='90d'){const f=new Date(now);f.setDate(f.getDate()-89);return{from:f.toISOString().slice(0,10),to:ts,label:'Últimos 90 dias'};}
+  return{from:S.customFrom,to:S.customTo,label:`${S.customFrom} → ${S.customTo}`};
+}
+function filterOrders(from,to){return S.allOrders.filter(o=>{const d=(o.date_created||'').slice(0,10);return d>=from&&d<=to;});}
+
+// ── AUTH ───────────────────────────────────────────
+function startAuth(){
+  const cid=document.getElementById('client-id').value.trim(),csec=document.getElementById('client-secret').value.trim();
+  if(!cid||!csec){alert('Preencha App ID e Client Secret.');return;}
+  localStorage.setItem('ml_cid',cid);localStorage.setItem('ml_csec',csec);localStorage.setItem('ml_redir',location.href.split('?')[0]);
+  location.href=`https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=${cid}&redirect_uri=${encodeURIComponent(localStorage.getItem('ml_redir'))}`;
+}
+async function handleCB(){
+  const code=new URLSearchParams(location.search).get('code');if(!code)return false;
+  const cid=localStorage.getItem('ml_cid'),csec=localStorage.getItem('ml_csec'),redir=localStorage.getItem('ml_redir');if(!cid)return false;
+  showLoading('Obtendo token...');
+  try{const r=await fetch('https://api.mercadolibre.com/oauth/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:'authorization_code',client_id:cid,client_secret:csec,code,redirect_uri:redir})});const d=await r.json();if(d.access_token){S.token=d.access_token;S.uid=d.user_id;localStorage.setItem('ml_tok',d.access_token);localStorage.setItem('ml_uid',d.user_id);history.replaceState({},'',location.pathname);await loadReal();return true;}}catch(e){}
+  hideLoading();return false;
+}
+async function resumeSession(){
+  const tok=localStorage.getItem('ml_tok'),uid=localStorage.getItem('ml_uid');if(!tok||!uid)return false;
+  S.token=tok;S.uid=uid;showLoading('Retomando sessão...');
+  try{const r=await mlGet(`/users/${uid}`);if(r&&r.id){await loadReal();return true;}}catch(e){}
+  localStorage.removeItem('ml_tok');localStorage.removeItem('ml_uid');hideLoading();return false;
+}
+async function mlGet(p){const r=await fetch('https://api.mercadolibre.com'+p,{headers:{Authorization:'Bearer '+S.token}});return r.json();}
+
+// ── REAL DATA ──────────────────────────────────────
+async function loadReal(){
+  updateLoading('Carregando dados...');const uid=S.uid;
+  try{
+    const todayFrom=new Date().toISOString().slice(0,10)+'T00:00:00.000-03:00';
+    const [user,ord90,ordToday,items,qs]=await Promise.allSettled([mlGet(`/users/${uid}`),mlGet(`/orders/search?seller=${uid}&sort=date_desc&limit=100`),mlGet(`/orders/search?seller=${uid}&sort=date_desc&limit=50&order.date_created.from=${encodeURIComponent(todayFrom)}`),mlGet(`/users/${uid}/items/search?status=active&limit=50`),mlGet('/my/received_questions/search?status=UNANSWERED')]);
+    const u=user.status==='fulfilled'?user.value:{};
+    S.allOrders=(ord90.status==='fulfilled'?ord90.value.results:[])||[];
+    S.todayOrders=(ordToday.status==='fulfilled'?ordToday.value.results:[])||[];
+    const qList=((qs.status==='fulfilled'?(qs.value.questions||qs.value.results):[])||[]);
+    S.connected=true;S.demo=false;
+    const nick=u.nickname||u.first_name||'Vendedor';
+    document.getElementById('sidebar-user').textContent=nick;
+    document.getElementById('avatar-initials').textContent=nick.slice(0,2).toUpperCase();
+    document.getElementById('q-badge').textContent=qList.filter(q=>q.status==='UNANSWERED').length;
+    render();buildCatChart(catBreakdown(S.allOrders));buildReput(u);renderLive();renderQs(qList);
+    hideLoading();showPage('overview');showAlert('Conectado com sucesso! 🎈','success');
+  }catch(e){hideLoading();showAlert('Erro ao carregar dados. Verifique as credenciais.','warning');}
+}
+function catBreakdown(orders){const m={};orders.forEach(o=>(o.order_items||[]).forEach(it=>{const c=it.item?.category_id||'Outros';m[c]=(m[c]||0)+(it.unit_price||0)*(it.quantity||1);}));return Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,5);}
+
+// ── DEMO DATA ──────────────────────────────────────
+function loadDemoData(){
+  S.connected=true;S.demo=true;
+  document.getElementById('sidebar-user').textContent='Tip Top Store';
+  document.getElementById('avatar-initials').textContent='TT';
+  const now=new Date();S.allOrders=[];S.todayOrders=[];
+  let oid=10000;
+  for(let i=0;i<90;i++){
+    const d=new Date(now);d.setDate(d.getDate()-i);
+    const cnt=Math.floor(8+Math.random()*25+(i<7?12:0)+(i===0?18:0));
+    for(let j=0;j<cnt;j++){
+      const pi=Math.floor(Math.random()*PRODS.length),qty=Math.floor(1+Math.random()*4);
+      const h=Math.floor(Math.random()*14)+8,m2=Math.floor(Math.random()*60);
+      const ds=`${d.toISOString().slice(0,10)}T${String(h).padStart(2,'0')}:${String(m2).padStart(2,'0')}:00.000-03:00`;
+      const o={id:oid++,date_created:ds,total_amount:PRICES[pi]*qty,status:['paid','shipped','delivered'][Math.floor(Math.random()*3)],order_items:[{item:{title:PRODS[pi],category_id:CATS[pi]},unit_price:PRICES[pi],quantity:qty}]};
+      S.allOrders.push(o);if(i===0)S.todayOrders.push(o);
+    }
+  }
+  document.getElementById('q-badge').textContent='3';
+  render();
+  buildCatChart([['Body',12800],['Conjunto',9400],['Macacão',7200],['Vestido',5600],['Pijama',4100]]);
+  buildReput(null);renderLive();buildDemoSales();buildDemoListings();buildDemoStock();buildDemoQs();
+  showPage('overview');showAlert('Modo demonstração ativo! Dados fictícios de roupinhas 👶','info');
+}
+
+// ── RENDER OVERVIEW ────────────────────────────────
+function render(){
+  const{from,to,label}=getRange();
+  const orders=filterOrders(from,to);
+  const rev=orders.reduce((s,o)=>s+(o.total_amount||0),0);
+  const cnt=orders.length,ticket=cnt?rev/cnt:0,pendQ=parseInt(document.getElementById('q-badge').textContent)||0;
+  setText('m-rev','R$ '+fmt2(rev));setText('m-rev-d',cnt+' pedidos no período');
+  setText('m-ord',cnt);setText('m-ord-d','Ticket médio R$ '+fmt0(ticket));
+  setText('m-ticket','R$ '+fmt0(ticket));setText('m-ticket-d','Por pedido');
+  setText('m-q',pendQ);setText('m-q-d',pendQ>0?'▼ Aguardando resposta':'Tudo certo!');
+  document.getElementById('period-label').textContent=label;
+  document.getElementById('top-badge').textContent=label;
+  buildMainChart(orders,from,to);buildTopProducts(orders);
+}
+
+function buildMainChart(orders,from,to){
+  dC('main');
+  const f=new Date(from),t=new Date(to);const days=[];const rm={};const om={};
+  for(let d=new Date(f);d<=t;d.setDate(d.getDate()+1)){const k=d.toISOString().slice(0,10);days.push(k);rm[k]=0;om[k]=0;}
+  orders.forEach(o=>{const k=(o.date_created||'').slice(0,10);if(rm[k]!==undefined){rm[k]+=(o.total_amount||0);om[k]++;}});
+  const labels=days.map(k=>{const[,m,d]=k.split('-');return d+'/'+m;});
+  const data=S.chartMode==='rev'?days.map(k=>rm[k]):days.map(k=>om[k]);
+  CH.main=new Chart(document.getElementById('mainChart'),{type:'line',data:{labels,datasets:[{data,borderColor:'#1DC8CD',backgroundColor:'rgba(29,200,205,.12)',tension:.4,fill:true,pointRadius:days.length>30?0:4,pointHoverRadius:6,borderWidth:2.5,pointBackgroundColor:'#1DC8CD',pointBorderColor:'#fff',pointBorderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:'rgba(29,200,205,.08)'},ticks:{color:'#5a8a8b',maxTicksLimit:10,font:{size:11,family:'Nunito',weight:'700'}}},y:{grid:{color:'rgba(29,200,205,.08)'},ticks:{color:'#5a8a8b',font:{size:11,family:'Nunito',weight:'700'},callback:v=>S.chartMode==='rev'?'R$'+(v>=1000?(v/1000).toFixed(1)+'k':v):v}}}}});
+}
+
+function switchTab(mode,el){document.querySelectorAll('.chart-tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');S.chartMode=mode;render();}
+
+function buildCatChart(cats){
+  dC('cat');const labels=cats.map(c=>c[0]),data=cats.map(c=>c[1]),total=data.reduce((a,b)=>a+b,0);
+  document.getElementById('cat-legend').innerHTML=labels.map((l,i)=>`<span style="display:flex;align-items:center;gap:3px"><span style="width:9px;height:9px;border-radius:50%;background:${COLORS[i]};flex-shrink:0"></span>${l} ${total?Math.round(data[i]/total*100)+'%':''}</span>`).join('');
+  CH.cat=new Chart(document.getElementById('catChart'),{type:'doughnut',data:{labels,datasets:[{data,backgroundColor:COLORS,borderWidth:3,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'68%'}});
+}
+
+function buildTopProducts(orders){
+  const m={};orders.forEach(o=>(o.order_items||[]).forEach(it=>{const t=it.item?.title||'Produto';if(!m[t])m[t]={s:0,r:0};m[t].s+=it.quantity||1;m[t].r+=(it.unit_price||0)*(it.quantity||1);}));
+  const s=Object.entries(m).sort((a,b)=>b[1].r-a[1].r).slice(0,5);
+  document.getElementById('top-body').innerHTML=s.length?s.map(([n,d])=>`<tr><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${n}</td><td>${d.s}</td><td>R$ ${fmt0(d.r)}</td><td><span class="badge badge-green">Ativo</span></td></tr>`).join(''):`<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:18px">Sem dados no período</td></tr>`;
+}
+
+function buildReput(user){
+  const rep=user?.seller_reputation;
+  const vals=[rep?.metrics?.sales?.completed||97,100-(rep?.metrics?.transactions?.ratings?.negative||1),rep?.metrics?.delayed_handling_time?.rate?(1-rep.metrics.delayed_handling_time.rate)*100:94,rep?.metrics?.claims?.rate?(1-rep.metrics.claims.rate)*100:96];
+  dC('reput');
+  CH.reput=new Chart(document.getElementById('reputChart'),{type:'radar',data:{labels:['Vendas','Avaliação','Envio','Reclamações'],datasets:[{data:vals,borderColor:'#1DC8CD',backgroundColor:'rgba(29,200,205,.15)',pointBackgroundColor:'#1DC8CD',pointBorderColor:'#fff',pointBorderWidth:2,borderWidth:2.5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{r:{beginAtZero:true,max:100,ticks:{display:false},grid:{color:'rgba(29,200,205,.15)'},pointLabels:{font:{size:11,family:'Nunito',weight:'700'},color:'#5a8a8b'}}}}});
+  const lbls=['Vendas concluídas','Avaliação positiva','Envio no prazo','Reclamações'];
+  document.getElementById('reput-grid').innerHTML=vals.map((v,i)=>`<div style="background:var(--teal-ll);border:1.5px dashed var(--border);border-radius:12px;padding:8px 10px"><div style="font-size:11px;color:var(--muted);font-weight:700">${lbls[i]}</div><div style="font-size:16px;font-weight:900;color:${v>=90?'var(--teal-d)':'var(--pink-d)'}">${Math.round(v)}%</div></div>`).join('');
+}
+
+// ── BALLOON CANVAS ENGINE ──────────────────────────
+const BC={canvas:null,ctx:null,balloons:[],raf:null,W:0,H:0};
+function initBalloonCanvas(){
+  BC.canvas=document.getElementById('balloon-canvas');
+  if(!BC.canvas)return;
+  BC.ctx=BC.canvas.getContext('2d');
+  resizeBC();
+  if(!BC.raf) bcLoop();
+}
+function resizeBC(){
+  const a=document.getElementById('ws-arena');
+  if(!a||!BC.canvas)return;
+  BC.W=BC.canvas.width=a.clientWidth;
+  BC.H=BC.canvas.height=a.clientHeight;
+}
+function spawnBalloon(amount){
+  const clrs=['#F25C6E','#1DC8CD','#FFE600','#FF8C42','#B06AFF'];
+  const n=Math.min(4,Math.max(1,Math.floor(amount/60)));
+  for(let i=0;i<n;i++){
+    BC.balloons.push({
+      x:60+Math.random()*(BC.W-120), y:BC.H+35+i*22,
+      vx:(Math.random()-.5)*1.4, vy:-(2.8+Math.random()*2.4),
+      r:16+Math.random()*14, color:clrs[Math.floor(Math.random()*clrs.length)],
+      alpha:1, fireAge:0, onFire:true,
+      sw:Math.random()*Math.PI*2, swSpd:.04+Math.random()*.03
+    });
+  }
+}
+function bcLoop(){
+  BC.raf=requestAnimationFrame(bcLoop);
+  if(!BC.ctx)return;
+  BC.ctx.clearRect(0,0,BC.W,BC.H);
+  BC.balloons=BC.balloons.filter(b=>b.alpha>0.02&&b.y>-100);
+  for(const b of BC.balloons){
+    b.sw+=b.swSpd; b.x+=b.vx+Math.sin(b.sw)*.5; b.y+=b.vy; b.vy*=.994;
+    if(b.y<BC.H*.25) b.alpha-=.009;
+    const c=BC.ctx;
+    c.save(); c.globalAlpha=b.alpha;
+    c.beginPath(); c.ellipse(b.x,b.y,b.r*.85,b.r,0,0,Math.PI*2);
+    c.fillStyle=b.color; c.fill();
+    c.beginPath(); c.ellipse(b.x-b.r*.22,b.y-b.r*.28,b.r*.2,b.r*.14,-.5,0,Math.PI*2);
+    c.fillStyle='rgba(255,255,255,.32)'; c.fill();
+    c.beginPath(); c.moveTo(b.x,b.y+b.r);
+    c.quadraticCurveTo(b.x+5,b.y+b.r+10,b.x+1,b.y+b.r+20);
+    c.strokeStyle='rgba(255,255,255,.35)'; c.lineWidth=1; c.stroke();
+    if(b.onFire&&b.fireAge<70){
+      b.fireAge++;
+      drawFire(c,b.x,b.y+b.r,b.r*.55,1-b.fireAge/70);
+    } else { b.onFire=false; }
+    c.restore();
+  }
+}
+function drawFire(c,x,y,sz,p){
+  const layers=[
+    `rgba(255,50,0,${p*.95})`,`rgba(255,130,0,${p*.75})`,`rgba(255,210,0,${p*.5})`
+  ];
+  for(let i=0;i<3;i++){
+    const s=sz*(1-i*.22),oy=-i*s*.55;
+    c.beginPath();
+    c.moveTo(x,y+oy+s);
+    c.bezierCurveTo(x-s*.6,y+oy,x-s*.25,y+oy-s*1.2,x,y+oy-s*1.85);
+    c.bezierCurveTo(x+s*.25,y+oy-s*1.2,x+s*.6,y+oy,x,y+oy+s);
+    c.fillStyle=layers[i]; c.fill();
+  }
+}
+
+// ── TICKER ────────────────────────────────────────
+function pushTicker(prod,amount){
+  const track=document.getElementById('ticker-track');
+  if(!track)return;
+  const sp=document.createElement('span');
+  sp.className='tick-item tick-up';
+  sp.textContent=`🎈 ${prod.substring(0,20)} +R$${fmt0(amount)} ▲`;
+  track.appendChild(sp.cloneNode(true));
+  track.appendChild(sp);
+}
+
+// ── LIVE RENDER ────────────────────────────────────
+let prevOrderCount=0;
+function renderLive(){
+  const orders=S.todayOrders;
+  const rev=orders.reduce((s,o)=>s+(o.total_amount||0),0);
+  const cnt=orders.length,ticket=cnt?rev/cnt:0;
+  const pendQ=parseInt(document.getElementById('q-badge').textContent)||0;
+  const isNew=cnt>prevOrderCount; prevOrderCount=cnt;
+  flashKpi('lv-rev','R$ '+fmt2(rev),isNew);
+  flashKpi('lv-ord',cnt,isNew);
+  setText('lv-ticket','R$ '+fmt0(ticket));
+  setText('lv-q',pendQ);
+  setText('lv-rev-delta',cnt+' pedidos');
+  document.getElementById('last-update-time').textContent='Atualizado às '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  setText('live-feed-count',cnt+' vendas');
+  if(orders.length){
+    const last=[...orders].sort((a,b)=>new Date(b.date_created)-new Date(a.date_created))[0];
+    const prod=last.order_items?.[0]?.item?.title||'Pedido';
+    setText('ws-sale-prod',prod);
+    setText('ws-sale-val','R$ '+fmt2(last.total_amount||0));
+    setText('ws-sale-time',new Date(last.date_created).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
+    if(isNew){const el=document.getElementById('ws-last-sale');el.classList.remove('sale-flash');void el.offsetWidth;el.classList.add('sale-flash');}
+  }
+  renderLiveList(orders,isNew);
+  buildLiveHour(orders);
+  initBalloonCanvas();
+}
+function flashKpi(id,val,doFlash){
+  const el=document.getElementById(id); if(!el)return;
+  el.textContent=val;
+  if(doFlash){
+    el.classList.remove('flash-up'); void el.offsetWidth; el.classList.add('flash-up');
+    if(id==='lv-rev'){
+      spawnBalloon(S.todayOrders[0]?.total_amount||100);
+      pushTicker(S.todayOrders[0]?.order_items?.[0]?.item?.title||'Produto',S.todayOrders[0]?.total_amount||0);
+    }
+  }
+}
+function renderLiveList(orders,isNew){
+  const el=document.getElementById('live-list');
+  const sorted=[...orders].sort((a,b)=>new Date(b.date_created)-new Date(a.date_created));
+  if(!sorted.length){el.innerHTML='<div style="padding:22px;text-align:center;color:rgba(29,200,205,.5);font-size:13px;font-weight:700">Aguardando pedidos... 🎈</div>';return;}
+  el.innerHTML=sorted.slice(0,25).map((o,i)=>{
+    const t=new Date(o.date_created),ts=t.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    const prod=o.order_items?.[0]?.item?.title||'Pedido #'+o.id;
+    const dc={paid:'sdot-green',shipped:'sdot-blue',delivered:'sdot-green',cancelled:'sdot-red'};
+    return`<div class="live-row${i===0&&isNew?' new-order':''}"><div class="live-time">${ts}</div><div class="sdot ${dc[o.status]||'sdot-blue'}"></div><div class="live-prod">${prod}</div><div class="live-amount">R$ ${fmt2(o.total_amount||0)}</div></div>`;
+  }).join('');
+}
+function buildLiveHour(orders){
+  dC('liveHour');
+  const byH=new Array(24).fill(0);orders.forEach(o=>{byH[new Date(o.date_created).getHours()]+=(o.total_amount||0);});
+  const now=new Date().getHours(),labels=[],data=[];
+  for(let h=0;h<=now;h++){labels.push(String(h).padStart(2,'0')+'h');data.push(byH[h]);}
+  CH.liveHour=new Chart(document.getElementById('liveHourChart'),{type:'bar',data:{labels,datasets:[{data,backgroundColor:data.map((_,i)=>i===now?'rgba(29,200,205,.95)':'rgba(29,200,205,.35)'),borderRadius:8,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:'#5a8a8b',font:{size:11,family:'Nunito',weight:'700'}}},y:{grid:{color:'rgba(29,200,205,.08)'},ticks:{color:'#5a8a8b',font:{size:11,family:'Nunito',weight:'700'},callback:v=>'R$'+(v>=1000?(v/1000).toFixed(0)+'k':v)}}}}});
+}
+function startLive(){
+  S.liveRunning=true; S.countdownSec=60;
+  if(S.cdTimer)clearInterval(S.cdTimer);
+  S.cdTimer=setInterval(()=>{
+    S.countdownSec--;
+    setText('countdown-num',S.countdownSec);
+    document.getElementById('countdown-fill').style.width=(S.countdownSec/60*100)+'%';
+    if(S.countdownSec<=0){S.countdownSec=60;liveRefresh();}
+  },1000);
+  setTimeout(()=>{resizeBC();initBalloonCanvas();},150);
+}
+function stopLive(){S.liveRunning=false;if(S.cdTimer)clearInterval(S.cdTimer);}
+function toggleLive(){
+  if(S.liveRunning){stopLive();setText('live-btn-text','Pausado');document.getElementById('live-btn').style.background='#fef3c7';document.getElementById('live-btn').style.color='#92400e';}
+  else{startLive();setText('live-btn-text','Ao Vivo');document.getElementById('live-btn').style.background='';document.getElementById('live-btn').style.color='';}
+}
+async function liveRefresh(){
+  if(S.demo){
+    const pi=Math.floor(Math.random()*PRODS.length);
+    const no={id:99000+Math.random()*999|0,date_created:new Date().toISOString(),total_amount:PRICES[pi],status:'paid',order_items:[{item:{title:PRODS[pi]},unit_price:PRICES[pi],quantity:1}]};
+    S.todayOrders.unshift(no);S.allOrders.unshift(no);renderLive();return;
+  }
+  try{const tf=new Date().toISOString().slice(0,10)+'T00:00:00.000-03:00';const r=await mlGet(`/orders/search?seller=${S.uid}&sort=date_desc&limit=50&order.date_created.from=${encodeURIComponent(tf)}`);S.todayOrders=r.results||[];renderLive();}catch(e){}
+}
+
+// ── QUESTIONS + REPLY ──────────────────────────────
+let selectedQuestion=null;
+function renderQs(list){
+  const el=document.getElementById('questions-list');
+  if(!list||!list.length){el.innerHTML='<div style="padding:18px;text-align:center;color:var(--muted);font-weight:700">Nenhuma pergunta pendente 🎉</div>';return;}
+  S.questionList=list;
+  el.innerHTML=list.slice(0,12).map((q,i)=>{
+    const isPending=q.status==='UNANSWERED';
+    return`<div class="question-item${isPending?'':' answered'}" onclick="selectQuestion(${i})" id="qi-${i}">
+      <div class="q-header">
+        <div class="q-product" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${q.item_id||'Produto'}</div>
+        <span class="badge badge-${isPending?'red':'green'}">${isPending?'Pendente':'Respondida'}</span>
+      </div>
+      <div class="q-text" style="margin-top:4px">${q.text||''}</div>
+    </div>`;
+  }).join('');
+  setText('pending-count',list.filter(q=>q.status==='UNANSWERED').length+' pendentes');
+}
+function selectQuestion(i){
+  document.querySelectorAll('.question-item').forEach(el=>el.classList.remove('selected'));
+  const el=document.getElementById('qi-'+i); if(el)el.classList.add('selected');
+  const q=(S.questionList||[])[i]; if(!q)return;
+  selectedQuestion=q;
+  document.getElementById('reply-empty').style.display='none';
+  document.getElementById('reply-form').style.display='block';
+  setText('reply-product',q.item_id||'Produto');
+  document.getElementById('reply-question-text').textContent=q.text||'';
+  document.getElementById('reply-meta').textContent=q.status==='UNANSWERED'?'Aguardando resposta':'Já respondida';
+  document.getElementById('reply-text').value='';
+  document.getElementById('reply-text').focus();
+}
+function insertQuick(text){document.getElementById('reply-text').value=text;document.getElementById('reply-text').focus();}
+function clearReply(){
+  selectedQuestion=null;
+  document.getElementById('reply-empty').style.display='block';
+  document.getElementById('reply-form').style.display='none';
+  document.querySelectorAll('.question-item').forEach(el=>el.classList.remove('selected'));
+}
+async function sendReply(){
+  if(!selectedQuestion){alert('Selecione uma pergunta primeiro.');return;}
+  const text=document.getElementById('reply-text').value.trim();
+  if(!text){alert('Digite uma resposta antes de enviar.');return;}
+  const btn=document.getElementById('reply-send-btn');
+  btn.disabled=true; btn.textContent='Enviando...';
+  if(S.demo){
+    await new Promise(r=>setTimeout(r,900));
+    markQAnswered(selectedQuestion.id);
+    showQAlert('Resposta publicada com sucesso! 🎈','success');
+    clearReply();
+    btn.disabled=false; btn.innerHTML='<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Enviar Resposta';
+    return;
+  }
+  try{
+    const r=await fetch('https://api.mercadolibre.com/answers',{method:'POST',headers:{Authorization:'Bearer '+S.token,'Content-Type':'application/json'},body:JSON.stringify({question_id:selectedQuestion.id,text})});
+    const d=await r.json();
+    if(r.ok){
+      markQAnswered(selectedQuestion.id);
+      showQAlert('Resposta publicada no Mercado Livre! 🎈','success');
+      clearReply();
+      const np=(S.questionList||[]).filter(q=>q.status==='UNANSWERED'&&q.id!==selectedQuestion.id).length;
+      setText('q-badge',np); setText('m-q',np);
+    } else { showQAlert('Erro: '+(d.message||'tente novamente'),'warning'); }
+  }catch(e){showQAlert('Erro de conexão com a API.','warning');}
+  btn.disabled=false; btn.innerHTML='<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Enviar Resposta';
+}
+function markQAnswered(qid){
+  if(!S.questionList)return;
+  S.questionList=S.questionList.map(q=>q.id===qid?{...q,status:'ANSWERED'}:q);
+  renderQs(S.questionList);
+}
+function showQAlert(m,t){
+  const a=document.getElementById('q-alert-area');if(!a)return;
+  a.innerHTML=`<div class="alert alert-${t}">${m}</div>`;
+  setTimeout(()=>{if(a)a.innerHTML='';},5000);
+}
+function buildDemoQs(){
+  const qs=[
+    {id:1001,item_id:'Body Manga Curta Borboleta',text:'Esse body tem fechamento por baixo para trocar fralda?',status:'UNANSWERED'},
+    {id:1002,item_id:'Macacão Listrado Bebê',text:'Qual o peso indicado para o tamanho M?',status:'UNANSWERED'},
+    {id:1003,item_id:'Vestido Babado Tule Rosa',text:'Vem com calcinha combinando?',status:'UNANSWERED'},
+    {id:1004,item_id:'Conjunto Pijama Estrelinhas',text:'É 100% algodão? Pode passar a ferro?',status:'UNANSWERED'},
+    {id:1005,item_id:'Body Bordado Florzinha',text:'Tem nas cores azul e verde também?',status:'ANSWERED'},
+    {id:1006,item_id:'Jardineira Jeans Bordada',text:'Aceitam troca se não servir?',status:'ANSWERED'}
+  ];
+  S.questionList=qs; renderQs(qs);
+  document.getElementById('resp-bar').style.width='91%'; setText('resp-text','91% de taxa de resposta');
+  const sg=document.getElementById('q-stats-grid');
+  if(sg)sg.innerHTML=[['Respondidas','94%','teal'],['Urgentes (<1h)','38%','teal'],['Média de resposta','2h','teal'],['Total este mês','142','teal']].map(([l,v])=>`<div style="background:var(--teal-ll);border:1.5px dashed var(--border);border-radius:12px;padding:8px 10px"><div style="font-size:11px;color:var(--muted);font-weight:700">${l}</div><div style="font-size:15px;font-weight:900;color:var(--teal-d)">${v}</div></div>`).join('');
+  dC('resp');
+  CH.resp=new Chart(document.getElementById('responseChart'),{type:'bar',data:{labels:['<1h','1-3h','3-12h','12-24h','>24h'],datasets:[{data:[38,32,18,8,4],backgroundColor:['#1DC8CD','#22c55e','#f59e0b','#F25C6E','#9B59B6'],borderRadius:8,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:'#5a8a8b',font:{size:11,family:'Nunito',weight:'700'}}},y:{ticks:{color:'#5a8a8b',font:{size:11,family:'Nunito',weight:'700'}}}}}});
+}
+
+// ── SALES PAGE ─────────────────────────────────────
+function setSalesPer(p,el){document.querySelectorAll('#page-sales .period-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');S.salesPer=p;buildDemoSales();}
+function buildDemoSales(){
+  dC('sales');dC('ticket');dC('pay');
+  const n=S.salesPer==='7d'?7:S.salesPer==='30d'?30:90;
+  const days=[],rev=[];
+  for(let i=n-1;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push(d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}));rev.push(Math.round(900+Math.random()*2200+Math.sin(i/3)*400));}
+  CH.sales=new Chart(document.getElementById('salesChart'),{type:'bar',data:{labels:days,datasets:[{data:rev,backgroundColor:'rgba(29,200,205,.7)',borderRadius:8,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:'#5a8a8b',maxTicksLimit:14,font:{size:11,family:'Nunito',weight:'700'}}},y:{grid:{color:'rgba(29,200,205,.08)'},ticks:{color:'#5a8a8b',font:{size:11,family:'Nunito',weight:'700'},callback:v=>'R$'+(v/1000).toFixed(1)+'k'}}}}});
+  CH.ticket=new Chart(document.getElementById('ticketChart'),{type:'line',data:{labels:['Sem 1','Sem 2','Sem 3','Sem 4'],datasets:[{data:[92,108,98,115],borderColor:'#F25C6E',backgroundColor:'rgba(242,92,110,.1)',tension:.4,fill:true,borderWidth:2.5,pointBackgroundColor:'#F25C6E',pointBorderColor:'#fff',pointBorderWidth:2,pointRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#5a8a8b',font:{size:11,family:'Nunito',weight:'700'}}},y:{ticks:{color:'#5a8a8b',font:{size:11,family:'Nunito',weight:'700'},callback:v=>'R$ '+v}}}}});
+  CH.pay=new Chart(document.getElementById('payChart'),{type:'doughnut',data:{labels:['Cartão Crédito','Pix','Boleto','Débito'],datasets:[{data:[48,35,12,5],backgroundColor:COLORS,borderWidth:3,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11,family:'Nunito',weight:'700'},color:'#5a8a8b',padding:12}}}}});
+}
+function buildDemoListings(){
+  setText('l-active',38);setText('l-paused',4);setText('l-closed',6);
+  const it=[['Body Manga Curta Estampa Borboleta','R$ 89,90',42,2340,'green'],['Macacão Listrado Bebê','R$ 129,90',28,1847,'green'],['Conjunto Pijama Estrelinhas','R$ 99,90',65,1523,'green'],['Vestido Babado Tule Rosa','R$ 149,90',8,912,'yellow'],['Jardineira Jeans Bordada','R$ 159,90',3,678,'yellow'],['Body Bordado Florzinha','R$ 89,90',52,3210,'green'],['Calça Legging Floral','R$ 69,90',0,445,'red'],['Shorts Bermuda Tie-Dye','R$ 89,90',0,334,'red']];
+  document.getElementById('listings-body').innerHTML=it.map(([t,p,s,v,st])=>`<tr><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t}</td><td>${p}</td><td>${s}</td><td>${v.toLocaleString()}</td><td><span class="badge badge-${st}">${st==='green'?'Ativo':st==='yellow'?'Estoque baixo':'Sem estoque'}</span></td></tr>`).join('');
+}
+function buildDemoStock(){
+  document.getElementById('stock-alert-text').textContent='2 produtos sem estoque e 2 com nível baixo precisam de reposição';
+  const sk=[['Body Borboleta Manga Curta','SKU-TT021',42,80,'green'],['Macacão Listrado Bebê','SKU-TT035',28,70,'green'],['Conjunto Pijama Estrelinhas','SKU-TT047',65,95,'green'],['Vestido Babado Tule Rosa','SKU-TT012',8,20,'yellow'],['Jardineira Jeans Bordada','SKU-TT058',3,8,'red'],['Body Bordado Florzinha','SKU-TT009',52,85,'green'],['Calça Legging Floral','SKU-TT067',0,0,'red'],['Shorts Bermuda Tie-Dye','SKU-TT073',0,0,'red'],['Conjunto Verão Tucano','SKU-TT081',15,45,'yellow'],['Body Curto Poá Rosa','SKU-TT015',31,75,'green']];
+  document.getElementById('stock-body').innerHTML=sk.map(([n,sku,qty,pct,st])=>`<tr><td style="max-width:175px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${n}</td><td style="color:var(--muted);font-size:11px;font-weight:700">${sku}</td><td><strong>${qty}</strong></td><td><div class="stock-bar"><div class="stock-fill" style="width:${pct}%;background:${st==='green'?'var(--teal)':st==='yellow'?'#f59e0b':'var(--pink)'}"></div></div>${pct}%</td><td><span class="badge badge-${st}">${st==='green'?'Normal':st==='yellow'?'Baixo':'Crítico'}</span></td></tr>`).join('');
+}
+// ── HELPERS ────────────────────────────────────────
+function dC(id){if(CH[id]){CH[id].destroy();delete CH[id];}}
+function setText(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
+function fmt2(v){return Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmt0(v){return Number(v).toLocaleString('pt-BR',{maximumFractionDigits:0});}
+function showLoading(m){document.getElementById('loading-text').textContent=m;document.getElementById('loading').style.display='flex';}
+function updateLoading(m){document.getElementById('loading-text').textContent=m;}
+function hideLoading(){document.getElementById('loading').style.display='none';}
+function showAlert(m,t){
+  const a=document.getElementById('alert-area');if(!a)return;
+  a.innerHTML=`<div class="alert alert-${t}">${m}</div>`;
+  setTimeout(()=>{if(a)a.innerHTML='';},6000);
+}
+async function refreshData(){
+  if(!S.connected)return;const btn=document.getElementById('refresh-btn');btn.disabled=true;
+  if(S.demo){setTimeout(()=>{btn.disabled=false;showAlert('Dados atualizados! 🎈','success');},600);return;}
+  showLoading('Atualizando...');await loadReal();btn.disabled=false;
+}
+
+// ── INIT ───────────────────────────────────────────
+(async()=>{
+  const ok=await handleCB();
+  if(!ok){const r=await resumeSession();if(!r)showPage('auth');}
+})();
+</script>
+</body>
+</html>
