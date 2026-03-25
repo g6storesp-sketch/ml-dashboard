@@ -890,24 +890,114 @@ async function mlGet(p){const r=await fetch('https://api.mercadolibre.com'+p,{he
 
 // ── REAL DATA ──────────────────────────────────────
 async function loadReal(){
-  updateLoading('Carregando dados...');const uid=S.uid;
+  updateLoading('Carregando dados...');
+  const uid=S.uid;
   try{
-    const todayFrom=new Date().toISOString().slice(0,10)+'T00:00:00.000-03:00';
-    const [user,ord90,ordToday,items,qs]=await Promise.allSettled([mlGet(`/users/${uid}`),mlGet(`/orders/search?seller=${uid}&sort=date_desc&limit=100`),mlGet(`/orders/search?seller=${uid}&sort=date_desc&limit=50&order.date_created.from=${encodeURIComponent(todayFrom)}`),mlGet(`/users/${uid}/items/search?status=active&limit=50`),mlGet('/my/received_questions/search?status=UNANSWERED')]);
-    const u=user.status==='fulfilled'?user.value:{};
-    S.allOrders=(ord90.status==='fulfilled'?ord90.value.results:[])||[];
-    S.todayOrders=(ordToday.status==='fulfilled'?ordToday.value.results:[])||[];
-    const qList=((qs.status==='fulfilled'?(qs.value.questions||qs.value.results):[])||[]);
-    S.connected=true;S.demo=false;
-    const nick=u.nickname||u.first_name||'Vendedor';
-    document.getElementById('sidebar-user').textContent=nick;
-    document.getElementById('avatar-initials').textContent=nick.slice(0,2).toUpperCase();
-    document.getElementById('q-badge').textContent=qList.filter(q=>q.status==='UNANSWERED').length;
-    render();buildCatChart(catBreakdown(S.allOrders));buildReput(u);renderLive();renderQs(qList);
-    hideLoading();showPage('overview');showAlert('Conectado com sucesso! 🎈','success');
-  }catch(e){hideLoading();showAlert('Erro ao carregar dados. Verifique as credenciais.','warning');}
+    // 1. user info
+    const u = await mlGet(`/users/${uid}`);
+    console.log('USER:', u);
+
+    // 2. orders — try both endpoints
+    updateLoading('Buscando pedidos...');
+    let allOrders=[], todayOrders=[];
+
+    // primary endpoint
+    const ord = await mlGet(`/orders/search?seller=${uid}&sort=date_desc&limit=50&offset=0`);
+    console.log('ORDERS:', ord);
+    if(ord && ord.results) allOrders = ord.results;
+
+    // if empty try billing endpoint
+    if(!allOrders.length){
+      const ord2 = await mlGet(`/orders/search?seller=${uid}&sort=date_desc&limit=50`);
+      console.log('ORDERS2:', ord2);
+      if(ord2 && ord2.results) allOrders = ord2.results;
+    }
+
+    // filter today
+    const todayStr = new Date().toISOString().slice(0,10);
+    todayOrders = allOrders.filter(o=>(o.date_created||'').slice(0,10)===todayStr);
+
+    // 3. items
+    updateLoading('Buscando anúncios...');
+    const itemsRes = await mlGet(`/users/${uid}/items/search?status=active&limit=50`);
+    console.log('ITEMS:', itemsRes);
+
+    // 4. questions
+    const qRes = await mlGet(`/my/received_questions/search?status=UNANSWERED`);
+    console.log('QUESTIONS:', qRes);
+    const qList = (qRes.questions||qRes.results||[]);
+
+    // 5. listings detail if we have item ids
+    if(itemsRes && itemsRes.results && itemsRes.results.length){
+      updateLoading('Buscando detalhes dos anúncios...');
+      const ids = itemsRes.results.slice(0,20).join(',');
+      const itemsDetail = await mlGet(`/items?ids=${ids}&attributes=id,title,price,available_quantity,sold_quantity,status`);
+      console.log('ITEMS DETAIL:', itemsDetail);
+      S.itemsDetail = itemsDetail;
+    }
+
+    S.allOrders   = allOrders;
+    S.todayOrders = todayOrders;
+    S.connected   = true;
+    S.demo        = false;
+
+    const nick = u.nickname||u.first_name||'Vendedor';
+    document.getElementById('sidebar-user').textContent   = nick;
+    document.getElementById('avatar-initials').textContent = nick.slice(0,2).toUpperCase();
+    document.getElementById('q-badge').textContent = qList.filter(q=>q.status==='UNANSWERED').length;
+
+    render();
+    buildCatChart(catBreakdown(allOrders));
+    buildReput(u);
+    renderLive();
+    renderQs(qList);
+    buildRealListings(S.itemsDetail||[]);
+
+    hideLoading();
+    showPage('overview');
+
+    const msg = allOrders.length
+      ? `Conectado! ${allOrders.length} pedidos carregados 🎈`
+      : 'Conectado! Nenhum pedido encontrado nos últimos 90 dias.';
+    showAlert(msg, allOrders.length?'success':'info');
+
+  }catch(e){
+    console.error('loadReal error:', e);
+    hideLoading();
+    showAlert('Erro ao carregar dados: '+e.message,'warning');
+  }
 }
-function catBreakdown(orders){const m={};orders.forEach(o=>(o.order_items||[]).forEach(it=>{const c=it.item?.category_id||'Outros';m[c]=(m[c]||0)+(it.unit_price||0)*(it.quantity||1);}));return Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,5);}
+
+function buildRealListings(detail){
+  if(!detail||!detail.length) return;
+  const items = Array.isArray(detail)?detail:detail.map(d=>d.body||d).filter(Boolean);
+  const active=items.filter(i=>i.status==='active').length;
+  const paused=items.filter(i=>i.status==='paused').length;
+  const closed=items.filter(i=>i.status==='closed').length;
+  setText('l-active',active||'—');setText('l-paused',paused||'—');setText('l-closed',closed||'—');
+  const tbody=document.getElementById('listings-body');
+  if(!tbody)return;
+  tbody.innerHTML=items.slice(0,20).map(it=>{
+    const st=it.status==='active'?'green':it.status==='paused'?'yellow':'red';
+    const lbl=it.status==='active'?'Ativo':it.status==='paused'?'Pausado':'Encerrado';
+    return`<tr>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${it.title||'—'}</td>
+      <td>R$ ${fmt2(it.price||0)}</td>
+      <td>${it.available_quantity??'—'}</td>
+      <td>${it.sold_quantity??'—'}</td>
+      <td><span class="badge badge-${st}">${lbl}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function catBreakdown(orders){
+  const m={};
+  orders.forEach(o=>(o.order_items||[]).forEach(it=>{
+    const c=it.item?.category_id||'Outros';
+    m[c]=(m[c]||0)+(it.unit_price||0)*(it.quantity||1);
+  }));
+  return Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,5);
+}
 
 // ── DEMO DATA ──────────────────────────────────────
 function loadDemoData(){
