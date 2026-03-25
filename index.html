@@ -877,94 +877,170 @@ async function handleCB(){
   const code=new URLSearchParams(location.search).get('code');if(!code)return false;
   const cid=localStorage.getItem('ml_cid'),csec=localStorage.getItem('ml_csec'),redir=localStorage.getItem('ml_redir');if(!cid)return false;
   showLoading('Obtendo token...');
-  try{const r=await fetch('https://api.mercadolibre.com/oauth/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:'authorization_code',client_id:cid,client_secret:csec,code,redirect_uri:redir})});const d=await r.json();if(d.access_token){S.token=d.access_token;S.uid=d.user_id;localStorage.setItem('ml_tok',d.access_token);localStorage.setItem('ml_uid',d.user_id);history.replaceState({},'',location.pathname);await loadReal();return true;}}catch(e){}
+  try{
+    const r=await fetch('https://api.mercadolibre.com/oauth/token',{
+      method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:new URLSearchParams({grant_type:'authorization_code',client_id:cid,client_secret:csec,code,redirect_uri:redir})
+    });
+    const d=await r.json();
+    console.log('TOKEN RESPONSE:', d);
+    if(d.access_token){
+      S.token=d.access_token;
+      S.uid=d.user_id;
+      localStorage.setItem('ml_tok',d.access_token);
+      localStorage.setItem('ml_uid',d.user_id);
+      if(d.refresh_token) localStorage.setItem('ml_refresh',d.refresh_token);
+      history.replaceState({},'',location.pathname);
+      await loadReal();
+      return true;
+    } else {
+      console.error('Token error:', d);
+    }
+  }catch(e){console.error('handleCB error:',e);}
   hideLoading();return false;
 }
+
 async function resumeSession(){
-  const tok=localStorage.getItem('ml_tok'),uid=localStorage.getItem('ml_uid');if(!tok||!uid)return false;
-  S.token=tok;S.uid=uid;showLoading('Retomando sessão...');
-  try{const r=await mlGet(`/users/${uid}`);if(r&&r.id){await loadReal();return true;}}catch(e){}
-  localStorage.removeItem('ml_tok');localStorage.removeItem('ml_uid');hideLoading();return false;
+  const tok=localStorage.getItem('ml_tok'),uid=localStorage.getItem('ml_uid');
+  if(!tok||!uid)return false;
+  S.token=tok;S.uid=uid;
+  showLoading('Retomando sessão...');
+  try{
+    const r=await mlGet(`/users/${uid}`);
+    if(r&&r.id){
+      S.connected=true;
+      await loadReal();
+      return true;
+    }
+  }catch(e){
+    console.log('Session expired, clearing...',e);
+  }
+  localStorage.removeItem('ml_tok');
+  localStorage.removeItem('ml_uid');
+  localStorage.removeItem('ml_refresh');
+  hideLoading();
+  return false;
 }
-async function mlGet(p){const r=await fetch('https://api.mercadolibre.com'+p,{headers:{Authorization:'Bearer '+S.token}});return r.json();}
+async function mlGet(p){
+  const r=await fetch('https://api.mercadolibre.com'+p,{headers:{Authorization:'Bearer '+S.token}});
+  if(r.status===401){
+    // token expirado — tenta refresh
+    const refreshed = await tryRefreshToken();
+    if(refreshed){
+      const r2=await fetch('https://api.mercadolibre.com'+p,{headers:{Authorization:'Bearer '+S.token}});
+      return r2.json();
+    }
+    throw new Error('Token expirado. Faça login novamente.');
+  }
+  return r.json();
+}
+
+async function tryRefreshToken(){
+  const rt=localStorage.getItem('ml_refresh');
+  const cid=localStorage.getItem('ml_cid');
+  const csec=localStorage.getItem('ml_csec');
+  if(!rt||!cid||!csec) return false;
+  try{
+    const r=await fetch('https://api.mercadolibre.com/oauth/token',{
+      method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:new URLSearchParams({grant_type:'refresh_token',client_id:cid,client_secret:csec,refresh_token:rt})
+    });
+    const d=await r.json();
+    if(d.access_token){
+      S.token=d.access_token;
+      localStorage.setItem('ml_tok',d.access_token);
+      if(d.refresh_token) localStorage.setItem('ml_refresh',d.refresh_token);
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
 
 // ── REAL DATA ──────────────────────────────────────
 async function loadReal(){
   updateLoading('Carregando dados...');
   const uid=S.uid;
+
+  // marca como conectado ANTES de qualquer render
+  S.connected=true;
+  S.demo=false;
+
   try{
-    // 1. user info
+    // usuário
     const u = await mlGet(`/users/${uid}`);
     console.log('USER:', u);
+    const nick=u.nickname||u.first_name||'Vendedor';
+    document.getElementById('sidebar-user').textContent=nick;
+    document.getElementById('avatar-initials').textContent=nick.slice(0,2).toUpperCase();
 
-    // 2. orders — try both endpoints
+    // pedidos
     updateLoading('Buscando pedidos...');
-    let allOrders=[], todayOrders=[];
+    let allOrders=[];
+    try{
+      const ord=await mlGet(`/orders/search?seller=${uid}&sort=date_desc&limit=50&offset=0`);
+      console.log('ORDERS raw:', ord);
+      allOrders=ord.results||[];
+    }catch(e){ console.warn('orders error:',e); }
 
-    // primary endpoint
-    const ord = await mlGet(`/orders/search?seller=${uid}&sort=date_desc&limit=50&offset=0`);
-    console.log('ORDERS:', ord);
-    if(ord && ord.results) allOrders = ord.results;
+    // pedidos de hoje
+    const todayStr=new Date().toISOString().slice(0,10);
+    const todayOrders=allOrders.filter(o=>(o.date_created||'').slice(0,10)===todayStr);
 
-    // if empty try billing endpoint
-    if(!allOrders.length){
-      const ord2 = await mlGet(`/orders/search?seller=${uid}&sort=date_desc&limit=50`);
-      console.log('ORDERS2:', ord2);
-      if(ord2 && ord2.results) allOrders = ord2.results;
-    }
+    S.allOrders=allOrders;
+    S.todayOrders=todayOrders;
 
-    // filter today
-    const todayStr = new Date().toISOString().slice(0,10);
-    todayOrders = allOrders.filter(o=>(o.date_created||'').slice(0,10)===todayStr);
-
-    // 3. items
+    // anúncios
     updateLoading('Buscando anúncios...');
-    const itemsRes = await mlGet(`/users/${uid}/items/search?status=active&limit=50`);
-    console.log('ITEMS:', itemsRes);
+    let itemIds=[];
+    try{
+      const ir=await mlGet(`/users/${uid}/items/search?status=active&limit=50`);
+      console.log('ITEM IDS:', ir);
+      itemIds=ir.results||[];
+    }catch(e){ console.warn('items error:',e); }
 
-    // 4. questions
-    const qRes = await mlGet(`/my/received_questions/search?status=UNANSWERED`);
-    console.log('QUESTIONS:', qRes);
-    const qList = (qRes.questions||qRes.results||[]);
-
-    // 5. listings detail if we have item ids
-    if(itemsRes && itemsRes.results && itemsRes.results.length){
-      updateLoading('Buscando detalhes dos anúncios...');
-      const ids = itemsRes.results.slice(0,20).join(',');
-      const itemsDetail = await mlGet(`/items?ids=${ids}&attributes=id,title,price,available_quantity,sold_quantity,status`);
-      console.log('ITEMS DETAIL:', itemsDetail);
-      S.itemsDetail = itemsDetail;
+    // detalhes dos anúncios
+    if(itemIds.length){
+      try{
+        const ids=itemIds.slice(0,20).join(',');
+        const det=await mlGet(`/items?ids=${ids}&attributes=id,title,price,available_quantity,sold_quantity,status`);
+        console.log('ITEMS DETAIL:', det);
+        S.itemsDetail=det;
+        buildRealListings(det);
+      }catch(e){ console.warn('items detail error:',e); }
     }
 
-    S.allOrders   = allOrders;
-    S.todayOrders = todayOrders;
-    S.connected   = true;
-    S.demo        = false;
+    // perguntas
+    let qList=[];
+    try{
+      const qr=await mlGet(`/my/received_questions/search?status=UNANSWERED`);
+      console.log('QUESTIONS:', qr);
+      qList=qr.questions||qr.results||[];
+    }catch(e){ console.warn('questions error:',e); }
 
-    const nick = u.nickname||u.first_name||'Vendedor';
-    document.getElementById('sidebar-user').textContent   = nick;
-    document.getElementById('avatar-initials').textContent = nick.slice(0,2).toUpperCase();
-    document.getElementById('q-badge').textContent = qList.filter(q=>q.status==='UNANSWERED').length;
+    document.getElementById('q-badge').textContent=qList.filter(q=>q.status==='UNANSWERED').length;
 
     render();
     buildCatChart(catBreakdown(allOrders));
     buildReput(u);
     renderLive();
     renderQs(qList);
-    buildRealListings(S.itemsDetail||[]);
 
     hideLoading();
     showPage('overview');
 
-    const msg = allOrders.length
-      ? `Conectado! ${allOrders.length} pedidos carregados 🎈`
-      : 'Conectado! Nenhum pedido encontrado nos últimos 90 dias.';
+    const msg=allOrders.length
+      ?`Conectado! ${allOrders.length} pedidos carregados 🎈`
+      :'Conectado! Nenhum pedido encontrado. Verifique as permissões da aplicação.';
     showAlert(msg, allOrders.length?'success':'info');
 
   }catch(e){
-    console.error('loadReal error:', e);
+    console.error('loadReal FATAL:', e);
+    // mesmo com erro mantém conectado e mostra o que tem
     hideLoading();
-    showAlert('Erro ao carregar dados: '+e.message,'warning');
+    showPage('overview');
+    showAlert('Conectado, mas alguns dados não carregaram: '+e.message,'warning');
   }
 }
 
